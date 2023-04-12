@@ -1,0 +1,77 @@
+version: '3'
+
+services:
+  
+  composer_installer:
+    container_name: composer_installer
+    image: composer:2.5
+    volumes:
+      - ./backend:/app
+    command: sh -c "composer install";
+    
+  php:
+    container_name: php_container
+    build:
+      context: .
+      dockerfile: ./docker-compose/php/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./backend:/var/www/html
+      - ./logs/php.log:/var/log/fpm-php.www.log
+    networks:
+      - internal
+
+  nginx:
+    container_name: nginx_container
+    build:
+      context: .
+      dockerfile: ./docker-compose/nginx/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www/html
+      - ./logs/nginx:/var/logs/nginx
+    networks:
+      - internal
+      
+  postgres_service:
+    container_name: postgres_container
+    image: postgres:15
+    environment:
+      POSTGRES_DB: library
+      POSTGRES_USER: library_user
+      POSTGRES_PASSWORD: library_secret_pwd
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker-compose/postgres/schema_and_seeder:/docker-entrypoint-initdb.d
+      - ./docker-compose/postgres/pgdata:/var/lib/postgresql/data/pgdata
+    healthcheck:
+      test: ['CMD', 'ps_isready -U library_user -d library']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks: 
+      - internal
+
+  pgadmin_service:
+    container_name: pgadmin_container
+    image: dpage/pgadmin4:6
+    environment:
+      PGADMIN_DEFAULT_EMAIL: 'info@mail.test'
+      PGADMIN_DEFAULT_PASSWORD: 'pgadmin_secret_pwd'
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - '5050:80'
+    volumes:
+      - ./docker-compose/postgres/pgadmin:/var/lib/pgadmin
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

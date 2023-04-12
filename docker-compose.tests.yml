@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+
+  tests:
+    container_name: phpunit_tests_container
+    image: composer:2.5
+    volumes:
+      - ./backend:/app
+    command: sh -c "composer tests";

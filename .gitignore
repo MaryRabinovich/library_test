@@ -1,0 +1,5 @@
+backend/vendor/
+
+docker-compose/postgres/pgadmin/
+docker-compose/postgres/pgdata/
+logs/
